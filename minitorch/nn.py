@@ -268,7 +268,7 @@ def softmax_loss(logits: Tensor, target: Tensor) -> Tensor:
     result = -(logits - logsumexp(logits,1))
     mask = np.zeros((batch_size, C))
     mask[range(batch_size), target.to_numpy().astype('int')] = 1
-    result = result* tensor_from_numpy( mask)
+    result = result* tensor_from_numpy( mask, backend=result.backend, requires_grad=False)
     result = result.sum(1)
     ### END YOUR SOLUTION
     return result.view(batch_size,)
