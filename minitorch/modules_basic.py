@@ -76,6 +76,10 @@ class Dropout(Module):
 
 
 class Linear(Module):
+    def RParam(self, *shape, _backend):
+        r = 0.1 * (rand(shape, backend=_backend) - 0.5)
+        return Parameter(r)
+
     def __init__(self, in_size: int, out_size: int, bias: bool, backend: TensorBackend):
         super().__init__()
         """Applies a linear transformation to the incoming data. (Same as PyTorch)
@@ -90,8 +94,11 @@ class Linear(Module):
             bias   - The learnable weights of shape (out_size, ) initialized from Uniform(-1/sqrt(in_size), 1/sqrt(in_size)).
         """
         self.out_size = out_size
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
+        self.weights = self.RParam(in_size,out_size,_backend=backend) 
+        self.bias =  self.RParam(1,out_size,_backend=backend) 
+        self.use_bias = bias
+        print("In size: " + str(in_size))
+        print("out size: " + str(out_size))
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor):
@@ -104,9 +111,10 @@ class Linear(Module):
             output : Tensor of shape (n, out_size)
         """
         batch, in_size = x.shape
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
-        ### END YOUR SOLUTION
+        res = x@self.weights.value
+        if self.use_bias:
+            res += self.bias.value
+        return res
 
 
 class LayerNorm1d(Module):
