@@ -45,10 +45,10 @@ class MultiHeadAttention(Module):
         self.attn_hidden_dim = n_embd // n_head
 
         ### BEGIN YOUR SOLUTION
-        self.q_projection = Parameter(tensor.rand(self.n_embd, self.n_embd), backend, True)
-        self.k_projection = Parameter(tensor.rand(self.n_embd, self.n_embd), backend, True)
-        self.v_projection = Parameter(tensor.rand(self.n_embd, self.n_embd), backend, True)
-        self.out_projection = Linear(self.n_embd,self.n_embd)
+        self.q_projection =   Linear(self.n_embd, self.n_embd, bias, backend)
+        self.k_projection =   Linear(self.n_embd, self.n_embd, bias, backend)
+        self.v_projection    =   Linear(self.n_embd, self.n_embd, bias, backend)
+        self.out_projection = Linear(self.n_embd, self.n_embd, bias, backend)
         self.dropout = p_dropout
         ### END YOUR SOLUTION
 
@@ -57,14 +57,14 @@ class MultiHeadAttention(Module):
         mask = -np.finfo(datatype).max * np.triu(np.ones((1, 1, seq_len, seq_len), dtype=datatype), 1)
         return tensor_from_numpy(mask, backend=self.backend)
 
-    def reshape_and_multiply_matrix(self, m, x):
+    def reshape_and_multiply_layer(self, m, x):
         batch_size, seq_len, n_embd = x.shape
         x_flattened = x.view(batch_size*seq_len, n_embd)
-        m = x_flattened@m
-        m = m.view(batch_size, seq_len, n_embd)
-        m = m.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
-        m = m.permute(0,2,1,3)
-        return m
+        result = m(x_flattened)
+        result = result.view(batch_size, seq_len, n_embd)
+        result = result.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
+        result = result.permute(0,2,1,3)
+        return result
 
 
     def project_to_query_key_value(self, x):
@@ -80,9 +80,9 @@ class MultiHeadAttention(Module):
         """
         batch_size, seq_len, n_embd = x.shape
         ### BEGIN YOUR SOLUTION
-        q = self.reshape_and_multiply_matrix(self.q_projection.value, x)
-        k = self.reshape_and_multiply_matrix(self.k_projection.value, x)
-        v = self.reshape_and_multiply_matrix(self.v_projection.value, x)
+        q = self.reshape_and_multiply_layer(self.q_projection, x)
+        k = self.reshape_and_multiply_layer(self.k_projection, x)
+        v = self.reshape_and_multiply_layer(self.v_projection, x)
 
         kT = k.permute(0,1,3,2)
 
@@ -109,11 +109,18 @@ class MultiHeadAttention(Module):
         _, _, _, v_dim = v.shape
         assert q_dim == k_dim == v_dim
         result = None
-        
+        mask = self.create_causal_mask(queries_len)
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
+        result = q@kT/(self.attn_hidden_dim**0.5)
+        if self.causal:
+            result += mask
+        result = softmax(result,dim=3)
+        result = result @ v
+        # result shape b x num_heads x seq_len x attn_hidden_dim
         ### END YOUR SOLUTION
-
+        result = result.permute(0,2,1,3)
+        result = result.contiguous()
+        result = result.view(batch_size, queries_len, self.attn_hidden_dim*num_head)
         return result
 
     def forward(self, x):
@@ -127,7 +134,11 @@ class MultiHeadAttention(Module):
         """
         batch_size, seq_len, n_embd = x.shape
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
+        q,kT,v = self.project_to_query_key_value(x)
+        res = self.self_attention(q,kT,v)
+        res = self.out_projection(res.view(batch_size*seq_len,n_embd))
+        res = res.view(batch_size, seq_len, n_embd)
+        return res
         ### END YOUR SOLUTION
 
 
