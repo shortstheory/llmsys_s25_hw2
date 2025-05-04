@@ -61,10 +61,10 @@ class MultiHeadAttention(Module):
         batch_size, seq_len, n_embd = x.shape
         x_flattened = x.view(batch_size*seq_len, n_embd)
         result = m(x_flattened)
-        result = result.view(batch_size, seq_len, n_embd)
-        result = result.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
-        result = result.permute(0,2,1,3)
-        return result
+        result = result.contiguous().view(batch_size, seq_len, n_embd)
+        result = result.contiguous().view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
+        result = result.contiguous().permute(0,2,1,3)
+        return result.contiguous()
 
 
     def project_to_query_key_value(self, x):
@@ -113,14 +113,14 @@ class MultiHeadAttention(Module):
         ### BEGIN YOUR SOLUTION
         result = q@kT/(self.attn_hidden_dim**0.5)
         if self.causal:
-            result += mask
+            result = result+ mask
+        # result = result - max(result,dim=3).contiguous()
         result = softmax(result,dim=3)
         result = result @ v
         # result shape b x num_heads x seq_len x attn_hidden_dim
         ### END YOUR SOLUTION
-        result = result.permute(0,2,1,3)
-        result = result.contiguous()
-        result = result.view(batch_size, queries_len, self.attn_hidden_dim*num_head)
+        result = result.contiguous().permute(0,2,1,3)
+        result = result.contiguous().view(batch_size, queries_len, self.attn_hidden_dim*num_head)
         return result
 
     def forward(self, x):
@@ -136,8 +136,8 @@ class MultiHeadAttention(Module):
         ### BEGIN YOUR SOLUTION
         q,kT,v = self.project_to_query_key_value(x)
         res = self.self_attention(q,kT,v)
-        res = self.out_projection(res.view(batch_size*seq_len,n_embd))
-        res = res.view(batch_size, seq_len, n_embd)
+        res = self.out_projection(res.contiguous().view(batch_size*seq_len,n_embd))
+        res = res.contiguous().view(batch_size, seq_len, n_embd)
         return res
         ### END YOUR SOLUTION
 
