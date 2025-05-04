@@ -33,7 +33,7 @@ class Embedding(Module):
         self.num_embeddings = num_embeddings # Vocab size
         self.embedding_dim  = embedding_dim  # Embedding Dimension
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
+        self.weights = Parameter(tensor_from_numpy (np.random.normal(0,1,(num_embeddings, embedding_dim)), backend, True))
         ### END YOUR SOLUTION
     
     def forward(self, x: Tensor):
@@ -46,9 +46,14 @@ class Embedding(Module):
             output : Tensor of shape (batch_size, seq_len, embedding_dim)
         """
         bs, seq_len = x.shape
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
-        ### END YOUR SOLUTION
+        # ### BEGIN YOUR SOLUTION
+        mask = np.zeros((bs,seq_len,self.num_embeddings))
+        mask[np.arange(bs)[:,None],np.arange(seq_len)[None,:],x.to_numpy().astype('int')] = 1
+        tensorMask = tensor_from_numpy(mask,self.backend, False).view(bs*seq_len, self.num_embeddings)
+        res = tensorMask @ self.weights.value
+        res = res.view(bs,seq_len,self.embedding_dim,)
+        return res
+        # ### END YOUR SOLUTION
 
     
 class Dropout(Module):
@@ -71,7 +76,10 @@ class Dropout(Module):
             output : Tensor of shape (*)
         """
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
+        if self.training:
+            mask = np.random.binomial(1,1-self.p_dropout,x.shape)/(1-self.p_dropout)
+            return tensor_from_numpy( mask, x.backend, requires_grad=False) * x
+        return x
         ### END YOUR SOLUTION
 
 
@@ -97,8 +105,6 @@ class Linear(Module):
         self.weights = self.RParam(in_size,out_size,_backend=backend) 
         self.bias =  self.RParam(1,out_size,_backend=backend) 
         self.use_bias = bias
-        print("In size: " + str(in_size))
-        print("out size: " + str(out_size))
         ### END YOUR SOLUTION
 
     def forward(self, x: Tensor):

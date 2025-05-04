@@ -80,6 +80,7 @@ def test_dropout_student(backend):
     layer = minitorch.Dropout(p_dropout = 0.5)
     layer.training = True
     result = layer(x)
+
     np.testing.assert_allclose(result.to_numpy(), result_, atol=1e-5, rtol=1e-5)
 
 
