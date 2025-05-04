@@ -45,18 +45,27 @@ class MultiHeadAttention(Module):
         self.attn_hidden_dim = n_embd // n_head
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
-        # self.q_projection = 
-        # self.k_projection = 
-        # self.v_projection = 
-        # self.out_projection = 
-        # self.dropout = 
+        self.q_projection = Parameter(tensor.rand(self.n_embd, self.n_embd), backend, True)
+        self.k_projection = Parameter(tensor.rand(self.n_embd, self.n_embd), backend, True)
+        self.v_projection = Parameter(tensor.rand(self.n_embd, self.n_embd), backend, True)
+        self.out_projection = Linear(self.n_embd,self.n_embd)
+        self.dropout = p_dropout
         ### END YOUR SOLUTION
 
     def create_causal_mask(self, seq_len):
         # Returns a 1x1xTxt triangular causal mask for Q @ K^T (You will implicitly broadcast it to BxHxTxT)
         mask = -np.finfo(datatype).max * np.triu(np.ones((1, 1, seq_len, seq_len), dtype=datatype), 1)
         return tensor_from_numpy(mask, backend=self.backend)
+
+    def reshape_and_multiply_matrix(self, m, x):
+        batch_size, seq_len, n_embd = x.shape
+        x_flattened = x.view(batch_size*seq_len, n_embd)
+        m = x_flattened@m
+        m = m.view(batch_size, seq_len, n_embd)
+        m = m.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
+        m = m.permute(0,2,1,3)
+        return m
+
 
     def project_to_query_key_value(self, x):
         """Project x to Q, transpose of K, V for self attention
@@ -71,7 +80,12 @@ class MultiHeadAttention(Module):
         """
         batch_size, seq_len, n_embd = x.shape
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
+        q = self.reshape_and_multiply_matrix(self.q_projection.value, x)
+        k = self.reshape_and_multiply_matrix(self.k_projection.value, x)
+        v = self.reshape_and_multiply_matrix(self.v_projection.value, x)
+
+        kT = k.permute(0,1,3,2)
+
         ### END YOUR SOLUTION
         return q, kT, v
     
