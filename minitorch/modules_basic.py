@@ -139,8 +139,9 @@ class LayerNorm1d(Module):
         self.dim = dim
         self.eps = eps
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
         ### END YOUR SOLUTION
+        self.weights = Parameter( tensor_from_numpy( np.ones(self.dim), backend, True ))
+        self.bias = Parameter(tensor_from_numpy( np.zeros(self.dim), backend, True ))
 
     def forward(self, x: Tensor) -> Tensor:
         """Applies Layer Normalization over a mini-batch of inputs. 
@@ -154,6 +155,10 @@ class LayerNorm1d(Module):
             output - Tensor of shape (bs, dim)
         """
         batch, dim = x.shape
+        w = self.weights.value.view(self.dim,1)
+        var_sqrt = (x.var(1)+self.eps)**0.5
+        num = (x - x.mean(1))*self.weights.value
+        y = num/var_sqrt+self.bias.value
+        return y
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
         ### END YOUR SOLUTION
