@@ -61,10 +61,10 @@ class MultiHeadAttention(Module):
         batch_size, seq_len, n_embd = x.shape
         x_flattened = x.view(batch_size*seq_len, n_embd)
         result = m(x_flattened)
-        result = result.contiguous().view(batch_size, seq_len, n_embd)
-        result = result.contiguous().view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
-        result = result.contiguous().permute(0,2,1,3)
-        return result.contiguous()
+        result = result.view(batch_size, seq_len, n_embd)
+        result = result.view(batch_size, seq_len, self.n_head, self.attn_hidden_dim)
+        result = result.permute(0,2,1,3).contiguous()
+        return result
 
 
     def project_to_query_key_value(self, x):
@@ -84,7 +84,7 @@ class MultiHeadAttention(Module):
         k = self.reshape_and_multiply_layer(self.k_projection, x)
         v = self.reshape_and_multiply_layer(self.v_projection, x)
 
-        kT = k.permute(0,1,3,2)
+        kT = k.permute(0,1,3,2).contiguous()
 
         ### END YOUR SOLUTION
         return q, kT, v
@@ -114,13 +114,13 @@ class MultiHeadAttention(Module):
         result = q@kT/(self.attn_hidden_dim**0.5)
         if self.causal:
             result = result+ mask
-        # result = result - max(result,dim=3).contiguous()
+        # result = result - max(result,dim=3)
         result = softmax(result,dim=3)
         result = result @ v
         # result shape b x num_heads x seq_len x attn_hidden_dim
         ### END YOUR SOLUTION
-        result = result.contiguous().permute(0,2,1,3)
-        result = result.contiguous().view(batch_size, queries_len, self.attn_hidden_dim*num_head)
+        result = result.permute(0,2,1,3).contiguous()
+        result = result.view(batch_size, queries_len, self.attn_hidden_dim*num_head)
         return result
 
     def forward(self, x):
@@ -136,8 +136,8 @@ class MultiHeadAttention(Module):
         ### BEGIN YOUR SOLUTION
         q,kT,v = self.project_to_query_key_value(x)
         res = self.self_attention(q,kT,v)
-        res = self.out_projection(res.contiguous().view(batch_size*seq_len,n_embd))
-        res = res.contiguous().view(batch_size, seq_len, n_embd)
+        res = self.out_projection(res.view(batch_size*seq_len,n_embd))
+        res = res.view(batch_size, seq_len, n_embd)
         return res
         ### END YOUR SOLUTION
 

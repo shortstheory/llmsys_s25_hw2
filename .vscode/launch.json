@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Debug Pytest: test_multihead_attention_student",
+        "type": "python",
+        "request": "launch",
+        "module": "pytest",
+        "args": [
+          "-l",
+          "-v",
+          "-k",
+          "test_multihead_attention_student"
+        ],
+        "console": "integratedTerminal",
+        "justMyCode": false
+      }
+    ]
+  }
