@@ -98,8 +98,9 @@ class Linear(Module):
             bias   - The learnable weights of shape (out_size, ) initialized from Uniform(-1/sqrt(in_size), 1/sqrt(in_size)).
         """
         self.out_size = out_size
-        self.weights = Parameter( tensor_from_numpy(np.random.normal(0,1,(in_size,out_size)), backend, True))
-        self.bias = Parameter( tensor_from_numpy(np.random.normal(0,1,(1,out_size)), backend, True))
+        scale = 1/(in_size**0.5)
+        self.weights = Parameter( tensor_from_numpy(np.random.uniform(-scale,scale,(in_size,out_size)), backend, True))
+        self.bias = Parameter( tensor_from_numpy(np.random.uniform(-scale,scale,(1,out_size)), backend, True))
         self.use_bias = bias
         ### END YOUR SOLUTION
 
