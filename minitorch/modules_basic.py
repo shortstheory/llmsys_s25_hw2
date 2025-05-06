@@ -84,10 +84,6 @@ class Dropout(Module):
 
 
 class Linear(Module):
-    def RParam(self, *shape, _backend):
-        r = 0.1 * (rand(shape, backend=_backend) - 0.5)
-        return Parameter(r)
-
     def __init__(self, in_size: int, out_size: int, bias: bool, backend: TensorBackend):
         super().__init__()
         """Applies a linear transformation to the incoming data. (Same as PyTorch)
@@ -102,8 +98,8 @@ class Linear(Module):
             bias   - The learnable weights of shape (out_size, ) initialized from Uniform(-1/sqrt(in_size), 1/sqrt(in_size)).
         """
         self.out_size = out_size
-        self.weights = self.RParam(in_size,out_size,_backend=backend) 
-        self.bias =  self.RParam(1,out_size,_backend=backend) 
+        self.weights = Parameter( tensor_from_numpy(np.random.normal(0,1,(in_size,out_size)), backend, True))
+        self.bias = Parameter( tensor_from_numpy(np.random.normal(0,1,(1,out_size)), backend, True))
         self.use_bias = bias
         ### END YOUR SOLUTION
 
