@@ -293,16 +293,19 @@ def generate(model,
 
         token_ids = tokenizer(f'{example[src_key]}<eos_{src_key}>')['input_ids']
         len_src = len(token_ids)
-
         while len(token_ids) <= model_max_length:
             # BEGIN ASSIGN2_2
             # TODO
             # run the model with current token_ids, and predict the next token (gen_id)
             # hint: obtain the logits of next token, and take the argmax.
             gen_id = 0
-            raise NotImplementedError("Generation Function Not Implemented Yet")
+            # raise NotImplementedError("Generation Function Not Implemented Yet")
             # END ASSIGN2_2
-
+            decoderInputNumpy = np.array(token_ids).astype(np.int32).reshape(1,len(token_ids))
+            decoderInputTensor = minitorch.tensor_from_numpy(decoderInputNumpy, backend, False)
+            output  = model(decoderInputTensor)
+            outputNumpy = output.to_numpy()
+            gen_id = int(outputNumpy[0,-1].argmax())
             if gen_id == tokenizer.vocab[f'<eos_{tgt_key}>']:
                 break
             else:
@@ -332,7 +335,7 @@ def evaluate_bleu(examples, gen_sents, tgt_key):
     }
 
 
-def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
+def main(dataset_name='iwslt14-de-en-preprocess',
          model_max_length=40,
          n_epochs=20,
          batch_size=128,
@@ -375,7 +378,7 @@ def main(dataset_name='bbaaaa/iwslt14-de-en-preprocess',
         'backend': backend
     }
 
-    model = DecoderLM(**config)
+    model = minitorch.DecoderLM(**config)
     optimizer = minitorch.Adam(model.parameters(), lr=learning_rate)
 
     dataset, src_key, tgt_key = get_dataset(
