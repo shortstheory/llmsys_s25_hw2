@@ -271,7 +271,7 @@ class DecoderLM(Module):
         self.n_vocab             = n_vocab
         ### BEGIN YOUR SOLUTION
         self.token_embeddings    = Embedding(n_vocab, n_embd, backend)
-        self.position_embeddings = Embedding(n_vocab, n_embd, backend)
+        self.position_embeddings = Embedding(n_positions, n_embd, backend)
         self.t_layer_1           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
         self.t_layer_2           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
         self.t_layer_3           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
