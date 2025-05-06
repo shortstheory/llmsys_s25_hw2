@@ -270,16 +270,15 @@ class DecoderLM(Module):
         self.n_embd              = n_embd
         self.n_vocab             = n_vocab
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError
-        # self.token_embeddings    = 
-        # self.position_embeddings = 
-        # self.t_layer_1           = 
-        # self.t_layer_2           = 
-        # self.t_layer_3           = 
-        # self.t_layer_4           = 
-        # self.dropout             = 
-        # self.ln                  = 
-        # self.lm_head             = 
+        self.token_embeddings    = Embedding(n_vocab, n_embd, backend)
+        self.position_embeddings = Embedding(n_vocab, n_embd, backend)
+        self.t_layer_1           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_2           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_3           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.t_layer_4           = TransformerLayer(n_embd, n_head, p_dropout, ln_eps, bias, backend)
+        self.dropout             = Dropout(p_dropout)
+        self.ln                  = LayerNorm1d(n_embd, ln_eps, backend)
+        self.lm_head             = Linear(n_embd, n_vocab, bias, backend)
         ### END YOUR SOLUTION
     
     def forward(self, idx):
@@ -294,7 +293,6 @@ class DecoderLM(Module):
         batch_size, seq_len = idx.shape
 
         ### BEGIN SOLUTION
-        raise NotImplementedError
         # Get Token Embeddings of shape (batch_size, seq_len, n_embd)
         """
         Create Positional Embeddings of shape (1, seq_len, n_embd)
@@ -302,7 +300,27 @@ class DecoderLM(Module):
          - Pass the position ids through your positional embedding layer
          - Ensure shape is (1, seq_len, n_embd)
         """
+        np_poses = np.arange(0,seq_len).reshape(1,seq_len)
+        tensor_poses = tensor_from_numpy(np_poses,self.backend)
+        position_embeddings = self.position_embeddings(tensor_poses)
+        assert position_embeddings.shape[0] == 1
+        assert position_embeddings.shape[1] == seq_len
+        assert position_embeddings.shape[2] == self.n_embd
+        token_embeddings = self.token_embeddings(idx)
+
+        x = position_embeddings + token_embeddings
+        x = self.dropout(x)
+        x = self.t_layer_1(x)
+        x = self.t_layer_2(x)
+        x = self.t_layer_3(x)
+        x = self.t_layer_4(x)
+        x_norm = self.ln(x.view(batch_size*seq_len, self.n_embd))
+        x_norm = self.lm_head(x_norm)
+        x_norm = x_norm.view(batch_size, seq_len, self.n_vocab)
+        return x_norm
+        
         # Pass through each transformer Layer
+        
         # Final LayerNorm
         # Get correct shape
         ### END SOLUTION
